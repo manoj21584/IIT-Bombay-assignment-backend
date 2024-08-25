@@ -1,0 +1,101 @@
+#version: "3.8"
+#services:
+#  mysqldb:
+#    container_name: mysqldb
+#    image: mysql
+#    environment:
+#      MYSQL_ROOT_PASSWORD: password
+#      MYSQL_DATABASE: springbootdb
+#    networks:
+#      springboot-mysql-net:
+#  springboot-restful-webservices:
+#    container_name: springboot-restful-webservices
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    ports:
+#      - "8081:8080"
+#    depends_on:
+#      - mysqldb
+#    networks:
+#      springboot-mysql-net:
+#    restart: on-failure
+#
+#  react-app:
+#    build:
+#      context: course-front-end # Use an image built from the specified dockerfile in the `polling-app-client` directory.
+#      dockerfile: Dockerfile
+#      args:
+#        REACT_APP_API_BASE_URL: http://localhost:5173/
+#    ports:
+#      - "9090:5173" # Forward the exposed port 80 on the container to port 80 on the host machine
+#    restart: always
+#    depends_on:
+#      - springboot-restful-webservices
+#
+#    networks:
+#      springboot-mysql-net:
+#
+#
+#
+#
+#
+#
+#networks:
+#  springboot-mysql-net:
+#
+#
+#
+#
+#
+version: "3.8"
+services:
+  mysqldb:
+    container_name: mysqldb
+    image: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: springbootdb
+    networks:
+      - springboot-mysql-net
+    restart: always
+    volumes:
+      - db-data:/var/lib/mysql
+
+  springboot-restful-webservices:
+    container_name: springboot-restful-webservices
+    build:
+      context: ./Course # Backend Spring Boot build context
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8080"
+    depends_on:
+      - mysqldb
+    networks:
+      - springboot-mysql-net
+    restart: on-failure
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysqldb:3306/springbootdb
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: password
+
+  react-app:
+    container_name: react-app
+    build:
+      context: ./course-front-end # Use the correct path to the React frontend directory
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_API_BASE_URL: http://springboot-restful-webservices:8080/ # Internal reference for the Spring Boot API
+    ports:
+      - "3000:3000" # Port mapping for the React app
+    restart: always
+    depends_on:
+      - springboot-restful-webservices
+    networks:
+      - springboot-mysql-net
+
+networks:
+  springboot-mysql-net:
+
+volumes:
+  db-data:
